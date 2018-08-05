@@ -1,50 +1,51 @@
 #include <string>
 #include <vector>
+#include "geometry.h"
 #include "model.h"
 #include "tgaimage.h"
 
 const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red = TGAColor(255, 0, 0, 255);
+const TGAColor green = TGAColor(0, 255, 0, 255);
 
-void line2(int x0, int y0, int x1, int y1, TGAImage& image, TGAColor color) {
+void line2(Vec2i v0, Vec2i v1, TGAImage& image, TGAColor color) {
   for (float t = 0.; t < 1.; t += .1) {
-    int x = x0 * (1. - t) + x1 * t;
-    int y = y0 * (1. - t) + y1 * t;
+    int x = v0.x * (1. - t) + v1.x * t;
+    int y = v0.y * (1. - t) + v1.y * t;
     image.set(x, y, color);
   }
 }
 
-void line(int x0, int y0, int x1, int y1, TGAImage& image, const TGAColor& color) {
+void line(Vec2i v0, Vec2i v1, TGAImage& image, const TGAColor& color) {
   bool is_range_y = false;
 
   // We want to do work on a range that is longer than the domain so each pixel has a value.
-  if (std::abs(y1 - y0) > std::abs(x1 - x0)) {
+  if (std::abs(v1.y - v0.y) > std::abs(v1.x - v0.x)) {
     is_range_y = true;
-    std::swap(x0, y0);
-    std::swap(x1, y1);
+    std::swap(v0.x, v0.y);
+    std::swap(v1.x, v1.y);
   }
 
-  if (x0 > x1) {
-    std::swap(x0, x1);
-    std::swap(y0, y1);
+  if (v0.x > v1.x) {
+    std::swap(v0, v1);
   }
 
-  int range = x1 - x0;
+  int range = v1.x - v0.x;
 
   // If points are same exit.
   if (range == 0) {
-    image.set(x0, y0, color);
+    image.set(v0.x, v0.y, color);
     return;
   }
 
-  // x0 is range_start, x1 is range_end, y0 is domain_start, y1 is domain_end.
-  // Keep in mind y1 - y0 < x1 - x0.
-  // Therefore, (y1 - y0) / (x1 - x0) < 1.
-  float domain_range_inverse = (y1 - y0) * (1.0f / range);
+  // v0.x is range_start, v1.x is range_end, v0.y is domain_start, v1.y is domain_end.
+  // Keep in mind v1.y - v0.y < v1.x - v0.x.
+  // Therefore, (v1.y - v0.y) / (v1.x - v0.x) < 1.
+  float domain_range_inverse = (v1.y - v0.y) * (1.0f / range);
 
   // If range is 1, we have (range + 1) or two pixels.
-  float domain_closest = y0;
-  for (int i = x0; i <= x1; i++) {
+  float domain_closest = v0.y;
+  for (int i = v0.x; i <= v1.x; i++) {
     if (is_range_y) {
       image.set(domain_closest, i, color);
     } else {
@@ -68,10 +69,8 @@ void renderLines() {
   for (int j = 0; j < 1e5; j++) {
     for (size_t i = 0; i < x_series.size(); i++) {
       line(
-          start[0],
-          start[1],
-          (start[0] + x_series[i]),
-          (start[1] + y_series[i]),
+          Vec2i(start[0], start[1]),
+          Vec2i(start[0] + x_series[i], start[1] + y_series[i]),
           image,
           TGAColor(0xff - (i * 20), 0xff - (i * 20), 0xff - (i * 20), 0xff));
     }
@@ -97,7 +96,7 @@ void renderModel() {
       int y0 = (v0.y + 1.) * height / 2.;
       int x1 = (v1.x + 1.) * width / 2.;
       int y1 = (v1.y + 1.) * height / 2.;
-      line(x0, y0, x1, y1, image, white);
+      line(Vec2i(x0, y0), Vec2i(x1, y1), image, white);
     }
   }
 
@@ -105,8 +104,32 @@ void renderModel() {
   image.write_tga_file("output2.tga");
 }
 
+void triangle(Vec2i t0, Vec2i t1, Vec2i t2, TGAImage& image, const TGAColor& color) {
+  line(t0, t1, image, color);
+  line(t1, t2, image, color);
+  line(t2, t0, image, color);
+}
+
+void renderTriangles() {
+  const int width = 200;
+  const int height = 200;
+  TGAImage image(width, height, TGAImage::RGB);
+
+  Vec2i t0[3] = {Vec2i(10, 70), Vec2i(50, 160), Vec2i(70, 80)};
+  Vec2i t1[3] = {Vec2i(180, 50), Vec2i(150, 1), Vec2i(70, 180)};
+  Vec2i t2[3] = {Vec2i(180, 150), Vec2i(120, 160), Vec2i(130, 180)};
+
+  triangle(t0[0], t0[1], t0[2], image, red);
+  triangle(t1[0], t1[1], t1[2], image, white);
+  triangle(t2[0], t2[1], t2[2], image, green);
+
+  image.flip_vertically();  // i want to have the origin at the left bottom corner of the image
+  image.write_tga_file("output3.tga");
+}
+
 int main() {
   renderLines();
   renderModel();
+  renderTriangles();
   return 0;
 }
