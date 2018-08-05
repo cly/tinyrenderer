@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "algorithm": "cpp",
+        "bitset": "cpp",
+        "memory": "cpp"
+    },
+    "editor.tabSize": 2
+}

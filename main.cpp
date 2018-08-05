@@ -16,8 +16,9 @@ void line2(Vec2i v0, Vec2i v1, TGAImage& image, TGAColor color) {
   }
 }
 
-void line(Vec2i v0, Vec2i v1, TGAImage& image, const TGAColor& color) {
+std::vector<Vec2i> line(Vec2i v0, Vec2i v1, TGAImage& image, const TGAColor& color) {
   bool is_range_y = false;
+  std::vector<Vec2i> result;
 
   // We want to do work on a range that is longer than the domain so each pixel has a value.
   if (std::abs(v1.y - v0.y) > std::abs(v1.x - v0.x)) {
@@ -35,24 +36,27 @@ void line(Vec2i v0, Vec2i v1, TGAImage& image, const TGAColor& color) {
   // If points are same exit.
   if (range == 0) {
     image.set(v0.x, v0.y, color);
-    return;
-  }
+    result.push_back(v0);
+  } else {
+    // v0.x is range_start, v1.x is range_end, v0.y is domain_start, v1.y is domain_end.
+    // Keep in mind v1.y - v0.y < v1.x - v0.x.
+    // Therefore, (v1.y - v0.y) / (v1.x - v0.x) < 1.
+    float domain_range_inverse = (v1.y - v0.y) * (1.0f / range);
 
-  // v0.x is range_start, v1.x is range_end, v0.y is domain_start, v1.y is domain_end.
-  // Keep in mind v1.y - v0.y < v1.x - v0.x.
-  // Therefore, (v1.y - v0.y) / (v1.x - v0.x) < 1.
-  float domain_range_inverse = (v1.y - v0.y) * (1.0f / range);
-
-  // If range is 1, we have (range + 1) or two pixels.
-  float domain_closest = v0.y;
-  for (int i = v0.x; i <= v1.x; i++) {
-    if (is_range_y) {
-      image.set(domain_closest, i, color);
-    } else {
-      image.set(i, domain_closest, color);
+    // If range is 1, we have (range + 1) or two pixels.
+    float domain_closest = v0.y;
+    for (int i = v0.x; i <= v1.x; i++) {
+      Vec2i vertex = {i, static_cast<int>(domain_closest)};
+      if (is_range_y) {
+        std::swap(vertex.x, vertex.y);
+      }
+      image.set(vertex.x, vertex.y, color);
+      // result.push_back(vertex);
+      domain_closest += domain_range_inverse;
     }
-    domain_closest += domain_range_inverse;
   }
+
+  return result;
 }
 
 void renderLines() {
@@ -104,10 +108,31 @@ void renderModel() {
   image.write_tga_file("output2.tga");
 }
 
-void triangle(Vec2i t0, Vec2i t1, Vec2i t2, TGAImage& image, const TGAColor& color) {
+void triangle_unfilled(Vec2i& t0, Vec2i& t1, Vec2i& t2, TGAImage& image, const TGAColor& color) {
   line(t0, t1, image, color);
   line(t1, t2, image, color);
   line(t2, t0, image, color);
+}
+
+void triangle(Vec2i& t0, Vec2i& t1, Vec2i& t2, TGAImage& image, const TGAColor& color) {
+  // TODO: Check for invalid triangles.
+
+  // Sort vertices by y.
+  std::vector<Vec2i*> vertices = {&t0, &t1, &t2};
+  std::sort(vertices.begin(), vertices.end(), [](Vec2i* a, Vec2i* b) {
+    return a->y > b->y;
+  });
+
+  // Rasterize simultaneously left and right of triangle.
+  // Draw horizontal line segment between left and right boundary points.
+
+  // There are three lines
+  // Line1 from top vertex to 2nd vertex.
+  // Line2 from top vertex to 3rd vertex.
+  // Line3 from 2nd vertex to 3rd vertex.
+
+  // We fill from Line1 to Line2, then we fill from Line3 to Line2.
+
 }
 
 void renderTriangles() {
@@ -119,9 +144,10 @@ void renderTriangles() {
   Vec2i t1[3] = {Vec2i(180, 50), Vec2i(150, 1), Vec2i(70, 180)};
   Vec2i t2[3] = {Vec2i(180, 150), Vec2i(120, 160), Vec2i(130, 180)};
 
+  triangle_unfilled(t0[0], t0[1], t0[2], image, white);
   triangle(t0[0], t0[1], t0[2], image, red);
-  triangle(t1[0], t1[1], t1[2], image, white);
-  triangle(t2[0], t2[1], t2[2], image, green);
+  // triangle(t1[0], t1[1], t1[2], image, white);
+  // triangle(t2[0], t2[1], t2[2], image, green);
 
   image.flip_vertically();  // i want to have the origin at the left bottom corner of the image
   image.write_tga_file("output3.tga");
@@ -129,7 +155,7 @@ void renderTriangles() {
 
 int main() {
   renderLines();
-  renderModel();
+  // renderModel();
   renderTriangles();
   return 0;
 }
