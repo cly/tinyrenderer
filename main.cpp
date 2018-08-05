@@ -16,9 +16,8 @@ void line2(Vec2i v0, Vec2i v1, TGAImage& image, TGAColor color) {
   }
 }
 
-std::vector<Vec2i> line(Vec2i v0, Vec2i v1, TGAImage& image, const TGAColor& color) {
+void line(Vec2i v0, Vec2i v1, TGAImage& image, const TGAColor& color) {
   bool is_range_y = false;
-  std::vector<Vec2i> result;
 
   // We want to do work on a range that is longer than the domain so each pixel has a value.
   if (std::abs(v1.y - v0.y) > std::abs(v1.x - v0.x)) {
@@ -36,27 +35,24 @@ std::vector<Vec2i> line(Vec2i v0, Vec2i v1, TGAImage& image, const TGAColor& col
   // If points are same exit.
   if (range == 0) {
     image.set(v0.x, v0.y, color);
-    result.push_back(v0);
-  } else {
-    // v0.x is range_start, v1.x is range_end, v0.y is domain_start, v1.y is domain_end.
-    // Keep in mind v1.y - v0.y < v1.x - v0.x.
-    // Therefore, (v1.y - v0.y) / (v1.x - v0.x) < 1.
-    float domain_range_inverse = (v1.y - v0.y) * (1.0f / range);
-
-    // If range is 1, we have (range + 1) or two pixels.
-    float domain_closest = v0.y;
-    for (int i = v0.x; i <= v1.x; i++) {
-      Vec2i vertex = {i, static_cast<int>(domain_closest)};
-      if (is_range_y) {
-        std::swap(vertex.x, vertex.y);
-      }
-      image.set(vertex.x, vertex.y, color);
-      // result.push_back(vertex);
-      domain_closest += domain_range_inverse;
-    }
+    return;
   }
 
-  return result;
+  // v0.x is range_start, v1.x is range_end, v0.y is domain_start, v1.y is domain_end.
+  // Keep in mind v1.y - v0.y < v1.x - v0.x.
+  // Therefore, (v1.y - v0.y) / (v1.x - v0.x) < 1.
+  float domain_range_inverse = (v1.y - v0.y) * (1.0f / range);
+
+  // If range is 1, we have (range + 1) or two pixels.
+  float domain_closest = v0.y;
+  for (int i = v0.x; i <= v1.x; i++) {
+    if (is_range_y) {
+      image.set(domain_closest, i, color);
+    } else {
+      image.set(i, domain_closest, color);
+    }
+    domain_closest += domain_range_inverse;
+  }
 }
 
 void renderLines() {
@@ -132,7 +128,6 @@ void triangle(Vec2i& t0, Vec2i& t1, Vec2i& t2, TGAImage& image, const TGAColor& 
   // Line3 from 2nd vertex to 3rd vertex.
 
   // We fill from Line1 to Line2, then we fill from Line3 to Line2.
-
 }
 
 void renderTriangles() {
