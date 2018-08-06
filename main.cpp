@@ -149,7 +149,6 @@ void triangle(Vec2i& t0, Vec2i& t1, Vec2i& t2, TGAImage& image, const TGAColor& 
     to.x = v[2]->x + delta_v1_v2_inverse * (i - v[2]->y);
     line(from, to, image, color);
   }
-
 }
 
 void renderTriangles() {
@@ -162,9 +161,11 @@ void renderTriangles() {
   Vec2i t2[3] = {Vec2i(180, 150), Vec2i(120, 160), Vec2i(130, 180)};
 
   triangle_unfilled(t0[0], t0[1], t0[2], image, white);
-  triangle(t0[0], t0[1], t0[2], image, red);
-  triangle(t1[0], t1[1], t1[2], image, white);
-  triangle(t2[0], t2[1], t2[2], image, green);
+  for(int i = 0; i < 1e4; i++) {
+    triangle(t0[0], t0[1], t0[2], image, red);
+    triangle(t1[0], t1[1], t1[2], image, white);
+    triangle(t2[0], t2[1], t2[2], image, green);
+  }
 
   image.flip_vertically();  // i want to have the origin at the left bottom corner of the image
   image.write_tga_file("output3.tga");
