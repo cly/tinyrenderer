@@ -126,23 +126,29 @@ void triangle(Vec2i& t0, Vec2i& t1, Vec2i& t2, TGAImage& image, const TGAColor& 
   // Line1 from top vertex to 2nd vertex.
   // Line2 from top vertex to 3rd vertex.
   // Line3 from 2nd vertex to 3rd vertex.
-  float delta_v0_v1_inverse = -static_cast<float>(v[1]->x - v[0]->x) / static_cast<float>(v[1]->y - v[0]->y);
-  float delta_v0_v2_inverse = -static_cast<float>(v[2]->x - v[0]->x) / static_cast<float>(v[2]->y - v[0]->y);
-  float delta_v1_v2_inverse = -static_cast<float>(v[2]->x - v[1]->x) / static_cast<float>(v[2]->y - v[1]->y);
+  float delta_v0_v1_inverse = static_cast<float>(v[1]->x - v[0]->x) / static_cast<float>(v[1]->y - v[0]->y);
+  float delta_v0_v2_inverse = static_cast<float>(v[2]->x - v[0]->x) / static_cast<float>(v[2]->y - v[0]->y);
+  float delta_v1_v2_inverse = static_cast<float>(v[2]->x - v[1]->x) / static_cast<float>(v[2]->y - v[1]->y);
 
-  // We fill from Line1 to Line2, then we fill from Line3 to Line2.
+  // We fill from Line1 to Line2.
   Vec2i from;
   Vec2i to;
   for (int i = v[0]->y; i >= v[1]->y; i--) {
     from.y = i;
     to.y = i;
-    from.x = v[0]->x + delta_v0_v1_inverse * (v[0]->y - i);
-    to.x = v[0]->x + delta_v0_v2_inverse * (v[0]->y - i);
+    from.x = v[0]->x + delta_v0_v1_inverse * (i - v[0]->y);
+    to.x = v[0]->x + delta_v0_v2_inverse * (i - v[0]->y);
     line(from, to, image, color);
   }
-  // Given v[0].y - 1 what is value in Line1?
-  // delta y / delta x = delta y2 / delta x2
-  // delta x2 = delta y2 * (delta x / delta y);
+  
+  // Then we fill from Line3 to Line2.
+  for (int i = v[2]->y; i <= v[1]->y; i++) {
+    from.y = i;
+    to.y = i;
+    from.x = v[2]->x + delta_v0_v2_inverse * (i - v[2]->y);
+    to.x = v[2]->x + delta_v1_v2_inverse * (i - v[2]->y);
+    line(from, to, image, color);
+  }
 
 }
 
@@ -157,8 +163,8 @@ void renderTriangles() {
 
   triangle_unfilled(t0[0], t0[1], t0[2], image, white);
   triangle(t0[0], t0[1], t0[2], image, red);
-  // triangle(t1[0], t1[1], t1[2], image, white);
-  // triangle(t2[0], t2[1], t2[2], image, green);
+  triangle(t1[0], t1[1], t1[2], image, white);
+  triangle(t2[0], t2[1], t2[2], image, green);
 
   image.flip_vertically();  // i want to have the origin at the left bottom corner of the image
   image.write_tga_file("output3.tga");
