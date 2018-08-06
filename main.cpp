@@ -114,8 +114,8 @@ void triangle(Vec2i& t0, Vec2i& t1, Vec2i& t2, TGAImage& image, const TGAColor& 
   // TODO: Check for invalid triangles.
 
   // Sort vertices by y.
-  std::vector<Vec2i*> vertices = {&t0, &t1, &t2};
-  std::sort(vertices.begin(), vertices.end(), [](Vec2i* a, Vec2i* b) {
+  std::vector<Vec2i*> v = {&t0, &t1, &t2};
+  std::sort(v.begin(), v.end(), [](Vec2i* a, Vec2i* b) {
     return a->y > b->y;
   });
 
@@ -126,8 +126,24 @@ void triangle(Vec2i& t0, Vec2i& t1, Vec2i& t2, TGAImage& image, const TGAColor& 
   // Line1 from top vertex to 2nd vertex.
   // Line2 from top vertex to 3rd vertex.
   // Line3 from 2nd vertex to 3rd vertex.
+  float delta_v0_v1_inverse = -static_cast<float>(v[1]->x - v[0]->x) / static_cast<float>(v[1]->y - v[0]->y);
+  float delta_v0_v2_inverse = -static_cast<float>(v[2]->x - v[0]->x) / static_cast<float>(v[2]->y - v[0]->y);
+  float delta_v1_v2_inverse = -static_cast<float>(v[2]->x - v[1]->x) / static_cast<float>(v[2]->y - v[1]->y);
 
   // We fill from Line1 to Line2, then we fill from Line3 to Line2.
+  Vec2i from;
+  Vec2i to;
+  for (int i = v[0]->y; i >= v[1]->y; i--) {
+    from.y = i;
+    to.y = i;
+    from.x = v[0]->x + delta_v0_v1_inverse * (v[0]->y - i);
+    to.x = v[0]->x + delta_v0_v2_inverse * (v[0]->y - i);
+    line(from, to, image, color);
+  }
+  // Given v[0].y - 1 what is value in Line1?
+  // delta y / delta x = delta y2 / delta x2
+  // delta x2 = delta y2 * (delta x / delta y);
+
 }
 
 void renderTriangles() {
@@ -149,7 +165,7 @@ void renderTriangles() {
 }
 
 int main() {
-  renderLines();
+  // renderLines();
   // renderModel();
   renderTriangles();
   return 0;
