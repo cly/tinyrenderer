@@ -140,23 +140,19 @@ void triangle(Vec2i v0, Vec2i v1, Vec2i v2, TGAImage& image, const TGAColor& col
   float delta_v0_v2_inverse = static_cast<float>(v2.x - v0.x) / static_cast<float>(v2.y - v0.y);
   float delta_v1_v2_inverse = static_cast<float>(v2.x - v1.x) / static_cast<float>(v2.y - v1.y);
 
-  // We fill from Line1 to Line2.
   Vec2i from;
   Vec2i to;
-  for (int i = v0.y; i >= v1.y; i--) {
+  for (int i = v0.y; i >= v2.y; i--) {
     from.y = i;
     to.y = i;
-    from.x = v0.x + delta_v0_v1_inverse * (i - v0.y);
-    to.x = v0.x + delta_v0_v2_inverse * (i - v0.y);
-    line(from, to, image, color);
-  }
-  
-  // Then we fill from Line3 to Line2.
-  for (int i = v2.y; i <= v1.y; i++) {
-    from.y = i;
-    to.y = i;
-    from.x = v2.x + delta_v0_v2_inverse * (i - v2.y);
-    to.x = v2.x + delta_v1_v2_inverse * (i - v2.y);
+
+    if (i >= v1.y) {
+      from.x = v0.x + delta_v0_v1_inverse * (i - v0.y);
+      to.x = v0.x + delta_v0_v2_inverse * (i - v0.y);
+    } else {
+      from.x = v2.x + delta_v0_v2_inverse * (i - v2.y);
+      to.x = v2.x + delta_v1_v2_inverse * (i - v2.y);
+    }
     line(from, to, image, color);
   }
 }
