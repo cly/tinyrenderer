@@ -110,14 +110,24 @@ void triangle_unfilled(Vec2i& t0, Vec2i& t1, Vec2i& t2, TGAImage& image, const T
   line(t2, t0, image, color);
 }
 
-void triangle(Vec2i& t0, Vec2i& t1, Vec2i& t2, TGAImage& image, const TGAColor& color) {
-  // TODO: Check for invalid triangles.
+void triangle(Vec2i v0, Vec2i v1, Vec2i v2, TGAImage& image, const TGAColor& color) {
+  // If all 3 points on a line, then not a triangle return.
+  if ((v0.x == v1.x && v1.x == v2.x) || (v0.y == v1.y && v1.y == v2.y)) {
+    // TODO: Check for invalid triangles along diagonals or maybe algorithm works.
+    return;
+  }
 
-  // Sort vertices by y.
-  std::vector<Vec2i*> v = {&t0, &t1, &t2};
-  std::sort(v.begin(), v.end(), [](Vec2i* a, Vec2i* b) {
-    return a->y > b->y;
-  });
+  // Sort vertices by y, v0 highest y
+  if (v0.y < v1.y) {
+    std::swap(v0, v1);
+  }
+  if (v1.y < v2.y) {
+    std::swap(v1, v2);
+  }
+
+  if (v0.y < v1.y) {
+    std::swap(v0, v1);
+  }
 
   // Rasterize simultaneously left and right of triangle.
   // Draw horizontal line segment between left and right boundary points.
@@ -126,27 +136,27 @@ void triangle(Vec2i& t0, Vec2i& t1, Vec2i& t2, TGAImage& image, const TGAColor& 
   // Line1 from top vertex to 2nd vertex.
   // Line2 from top vertex to 3rd vertex.
   // Line3 from 2nd vertex to 3rd vertex.
-  float delta_v0_v1_inverse = static_cast<float>(v[1]->x - v[0]->x) / static_cast<float>(v[1]->y - v[0]->y);
-  float delta_v0_v2_inverse = static_cast<float>(v[2]->x - v[0]->x) / static_cast<float>(v[2]->y - v[0]->y);
-  float delta_v1_v2_inverse = static_cast<float>(v[2]->x - v[1]->x) / static_cast<float>(v[2]->y - v[1]->y);
+  float delta_v0_v1_inverse = static_cast<float>(v1.x - v0.x) / static_cast<float>(v1.y - v0.y);
+  float delta_v0_v2_inverse = static_cast<float>(v2.x - v0.x) / static_cast<float>(v2.y - v0.y);
+  float delta_v1_v2_inverse = static_cast<float>(v2.x - v1.x) / static_cast<float>(v2.y - v1.y);
 
   // We fill from Line1 to Line2.
   Vec2i from;
   Vec2i to;
-  for (int i = v[0]->y; i >= v[1]->y; i--) {
+  for (int i = v0.y; i >= v1.y; i--) {
     from.y = i;
     to.y = i;
-    from.x = v[0]->x + delta_v0_v1_inverse * (i - v[0]->y);
-    to.x = v[0]->x + delta_v0_v2_inverse * (i - v[0]->y);
+    from.x = v0.x + delta_v0_v1_inverse * (i - v0.y);
+    to.x = v0.x + delta_v0_v2_inverse * (i - v0.y);
     line(from, to, image, color);
   }
   
   // Then we fill from Line3 to Line2.
-  for (int i = v[2]->y; i <= v[1]->y; i++) {
+  for (int i = v2.y; i <= v1.y; i++) {
     from.y = i;
     to.y = i;
-    from.x = v[2]->x + delta_v0_v2_inverse * (i - v[2]->y);
-    to.x = v[2]->x + delta_v1_v2_inverse * (i - v[2]->y);
+    from.x = v2.x + delta_v0_v2_inverse * (i - v2.y);
+    to.x = v2.x + delta_v1_v2_inverse * (i - v2.y);
     line(from, to, image, color);
   }
 }
