@@ -131,29 +131,28 @@ void triangle(Vec2i v0, Vec2i v1, Vec2i v2, TGAImage& image, const TGAColor& col
 
   // Rasterize simultaneously left and right of triangle.
   // Draw horizontal line segment between left and right boundary points.
-
-  // There are three lines
-  // Line1 from top vertex to 2nd vertex.
-  // Line2 from top vertex to 3rd vertex.
-  // Line3 from 2nd vertex to 3rd vertex.
   float delta_v0_v1_inverse = static_cast<float>(v1.x - v0.x) / static_cast<float>(v1.y - v0.y);
   float delta_v0_v2_inverse = static_cast<float>(v2.x - v0.x) / static_cast<float>(v2.y - v0.y);
   float delta_v1_v2_inverse = static_cast<float>(v2.x - v1.x) / static_cast<float>(v2.y - v1.y);
 
-  Vec2i from;
-  Vec2i to;
-  for (int i = v0.y; i >= v2.y; i--) {
-    from.y = i;
-    to.y = i;
-
-    if (i >= v1.y) {
-      from.x = v0.x + delta_v0_v1_inverse * (i - v0.y);
-      to.x = v0.x + delta_v0_v2_inverse * (i - v0.y);
+  int from_x;
+  int to_x;
+  for (int y = v0.y; y >= v2.y; y--) {
+    if (y >= v1.y) {
+      from_x = v0.x + delta_v0_v1_inverse * (y - v0.y);
+      to_x = v0.x + delta_v0_v2_inverse * (y - v0.y);
     } else {
-      from.x = v2.x + delta_v0_v2_inverse * (i - v2.y);
-      to.x = v2.x + delta_v1_v2_inverse * (i - v2.y);
+      from_x = v2.x + delta_v0_v2_inverse * (y - v2.y);
+      to_x = v2.x + delta_v1_v2_inverse * (y - v2.y);
     }
-    line(from, to, image, color);
+
+    if (from_x > to_x) {
+      std::swap(from_x, to_x);
+    }
+
+    for (int x = from_x; x <= to_x; x++) {
+      image.set(x, y, color);
+    }
   }
 }
 
