@@ -104,13 +104,17 @@ void renderModel() {
   image.write_tga_file("output2.tga");
 }
 
-void triangle_unfilled(Vec2i& t0, Vec2i& t1, Vec2i& t2, TGAImage& image, const TGAColor& color) {
-  line(t0, t1, image, color);
-  line(t1, t2, image, color);
-  line(t2, t0, image, color);
+void triangle_unfilled(std::vector<Vec2i> v, TGAImage& image, const TGAColor& color) {
+  line(v[0], v[1], image, color);
+  line(v[1], v[2], image, color);
+  line(v[2], v[0], image, color);
 }
 
-void triangle(Vec2i v0, Vec2i v1, Vec2i v2, TGAImage& image, const TGAColor& color) {
+void triangle(std::vector<Vec2i> vertices, TGAImage& image, const TGAColor& color) {
+  Vec2i v0 = vertices[0];
+  Vec2i v1 = vertices[1];
+  Vec2i v2 = vertices[2];
+
   // If all 3 points on a line, then not a triangle return.
   if ((v0.x == v1.x && v1.x == v2.x) || (v0.y == v1.y && v1.y == v2.y)) {
     // TODO: Check for invalid triangles along diagonals or maybe algorithm works.
@@ -156,20 +160,24 @@ void triangle(Vec2i v0, Vec2i v1, Vec2i v2, TGAImage& image, const TGAColor& col
   }
 }
 
+// Use bounding box and then check whether point is in triangle.
+// void triangle_bb(Vec2i v0, Vec2i v1, Vec2i v2, TGAImage& image, const TGAColor& color) {
+// }
+
 void renderTriangles() {
   const int width = 200;
   const int height = 200;
   TGAImage image(width, height, TGAImage::RGB);
 
-  Vec2i t0[3] = {Vec2i(10, 70), Vec2i(50, 160), Vec2i(70, 80)};
-  Vec2i t1[3] = {Vec2i(180, 50), Vec2i(150, 1), Vec2i(70, 180)};
-  Vec2i t2[3] = {Vec2i(180, 150), Vec2i(120, 160), Vec2i(130, 180)};
+  std::vector<Vec2i> t0 = {Vec2i(10, 70), Vec2i(50, 160), Vec2i(70, 80)};
+  std::vector<Vec2i> t1 = {Vec2i(180, 50), Vec2i(150, 1), Vec2i(70, 180)};
+  std::vector<Vec2i> t2 = {Vec2i(180, 150), Vec2i(120, 160), Vec2i(130, 180)};
 
-  triangle_unfilled(t0[0], t0[1], t0[2], image, white);
+  triangle_unfilled(t0, image, white);
   for(int i = 0; i < 1e4; i++) {
-    triangle(t0[0], t0[1], t0[2], image, red);
-    triangle(t1[0], t1[1], t1[2], image, white);
-    triangle(t2[0], t2[1], t2[2], image, green);
+    triangle(t0, image, red);
+    triangle(t1, image, white);
+    triangle(t2, image, green);
   }
 
   image.flip_vertically();  // i want to have the origin at the left bottom corner of the image
