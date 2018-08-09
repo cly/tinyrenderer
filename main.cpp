@@ -111,9 +111,7 @@ void triangle_unfilled(std::vector<Vec2i> v, TGAImage& image, const TGAColor& co
 }
 
 void sort_vertices_y(std::vector<Vec2i>& vertices) {
-  std::sort(vertices.begin(), vertices.end(), [](Vec2i& a, Vec2i&b) {
-    return a.y > b.y;
-  });
+  std::sort(vertices.begin(), vertices.end(), [](Vec2i& a, Vec2i& b) { return a.y > b.y; });
 }
 
 void triangle(std::vector<Vec2i> v, TGAImage& image, const TGAColor& color) {
@@ -121,9 +119,12 @@ void triangle(std::vector<Vec2i> v, TGAImage& image, const TGAColor& color) {
 
   // Rasterize simultaneously left and right of triangle.
   // Draw horizontal line segment between left and right boundary points.
-  float delta_v0_v1_inverse = static_cast<float>(v[1].x - v[0].x) / static_cast<float>(v[1].y - v[0].y);
-  float delta_v0_v2_inverse = static_cast<float>(v[2].x - v[0].x) / static_cast<float>(v[2].y - v[0].y);
-  float delta_v1_v2_inverse = static_cast<float>(v[2].x - v[1].x) / static_cast<float>(v[2].y - v[1].y);
+  float delta_v0_v1_inverse =
+      static_cast<float>(v[1].x - v[0].x) / static_cast<float>(v[1].y - v[0].y);
+  float delta_v0_v2_inverse =
+      static_cast<float>(v[2].x - v[0].x) / static_cast<float>(v[2].y - v[0].y);
+  float delta_v1_v2_inverse =
+      static_cast<float>(v[2].x - v[1].x) / static_cast<float>(v[2].y - v[1].y);
 
   int from_x;
   int to_x;
@@ -175,15 +176,22 @@ void triangle_bb(std::vector<Vec2i> v, TGAImage& image, const TGAColor& color) {
   std::vector<Vec2i> bb = find_bounding_box(v);
   sort_vertices_y(v);
 
+  // y = mx + b
+  // b = y - mx
+  float m01 = static_cast<float>(v[1].y - v[0].y) / static_cast<float>(v[1].x - v[0].x);
+  float m12 = static_cast<float>(v[2].y - v[1].y) / static_cast<float>(v[2].x - v[1].x);
+  float m20 = static_cast<float>(v[0].y - v[2].y) / static_cast<float>(v[0].x - v[2].x);
+  float b01 = v[0].y - m01 * v[0].x;
+  float b12 = v[1].y - m12 * v[1].x;
+  float b20 = v[2].y - m20 * v[2].x;
+
   // For each point in bb, test to see if it's in triangle.
+  // In triangle means the value is on a particular side of the line. y < mx + b
   for (int x = bb[0].x; x <= bb[1].x; x++) {
     for (int y = bb[0].y; y <= bb[1].y; y++) {
-      if (y >= v[1].y) {
-        // Top half bounded by v0->v1 and v0->v2.
-      } else {
-        // Bottom half bounded by v1->v2 and v0->v2.
+      if (m01 * x + b01 >= y && m12 * x + b12 <= y && m20 * x + b20 >= y) {
+        image.set(x, y, color);
       }
-      std::cout << x << " " << y << std::endl;
     }
   }
 
@@ -203,7 +211,7 @@ void renderTriangles() {
   std::vector<Vec2i> t1 = {Vec2i(180, 50), Vec2i(150, 1), Vec2i(70, 180)};
   std::vector<Vec2i> t2 = {Vec2i(180, 150), Vec2i(120, 160), Vec2i(130, 180)};
 
-  triangle_unfilled(t0, image, white);
+  // triangle_unfilled(t0, image, white);
   for (int i = 0; i < 1e4; i++) {
     triangle(t0, image, red);
     triangle(t1, image, white);
