@@ -110,44 +110,30 @@ void triangle_unfilled(std::vector<Vec2i> v, TGAImage& image, const TGAColor& co
   line(v[2], v[0], image, color);
 }
 
-void triangle(std::vector<Vec2i> vertices, TGAImage& image, const TGAColor& color) {
-  Vec2i v0 = vertices[0];
-  Vec2i v1 = vertices[1];
-  Vec2i v2 = vertices[2];
+void sort_vertices_y(std::vector<Vec2i>& vertices) {
+  std::sort(vertices.begin(), vertices.end(), [](Vec2i& a, Vec2i&b) {
+    return a.y > b.y;
+  });
+}
 
-  // If all 3 points on a line, then not a triangle return.
-  if ((v0.x == v1.x && v1.x == v2.x) || (v0.y == v1.y && v1.y == v2.y)) {
-    // TODO: Check for invalid triangles along diagonals or maybe algorithm works.
-    return;
-  }
-
-  // Sort vertices by y, v0 highest y
-  if (v0.y < v1.y) {
-    std::swap(v0, v1);
-  }
-  if (v1.y < v2.y) {
-    std::swap(v1, v2);
-  }
-
-  if (v0.y < v1.y) {
-    std::swap(v0, v1);
-  }
+void triangle(std::vector<Vec2i> v, TGAImage& image, const TGAColor& color) {
+  sort_vertices_y(v);
 
   // Rasterize simultaneously left and right of triangle.
   // Draw horizontal line segment between left and right boundary points.
-  float delta_v0_v1_inverse = static_cast<float>(v1.x - v0.x) / static_cast<float>(v1.y - v0.y);
-  float delta_v0_v2_inverse = static_cast<float>(v2.x - v0.x) / static_cast<float>(v2.y - v0.y);
-  float delta_v1_v2_inverse = static_cast<float>(v2.x - v1.x) / static_cast<float>(v2.y - v1.y);
+  float delta_v0_v1_inverse = static_cast<float>(v[1].x - v[0].x) / static_cast<float>(v[1].y - v[0].y);
+  float delta_v0_v2_inverse = static_cast<float>(v[2].x - v[0].x) / static_cast<float>(v[2].y - v[0].y);
+  float delta_v1_v2_inverse = static_cast<float>(v[2].x - v[1].x) / static_cast<float>(v[2].y - v[1].y);
 
   int from_x;
   int to_x;
-  for (int y = v0.y; y >= v2.y; y--) {
-    if (y >= v1.y) {
-      from_x = v0.x + delta_v0_v1_inverse * (y - v0.y);
-      to_x = v0.x + delta_v0_v2_inverse * (y - v0.y);
+  for (int y = v[0].y; y >= v[2].y; y--) {
+    if (y >= v[1].y) {
+      from_x = v[0].x + delta_v0_v1_inverse * (y - v[0].y);
+      to_x = v[0].x + delta_v0_v2_inverse * (y - v[0].y);
     } else {
-      from_x = v2.x + delta_v0_v2_inverse * (y - v2.y);
-      to_x = v2.x + delta_v1_v2_inverse * (y - v2.y);
+      from_x = v[2].x + delta_v0_v2_inverse * (y - v[2].y);
+      to_x = v[2].x + delta_v1_v2_inverse * (y - v[2].y);
     }
 
     if (from_x > to_x) {
@@ -160,9 +146,53 @@ void triangle(std::vector<Vec2i> vertices, TGAImage& image, const TGAColor& colo
   }
 }
 
+std::vector<Vec2i> find_bounding_box(const std::vector<Vec2i>& vertices) {
+  if (!vertices.size()) {
+    // TODO: This should assert.
+    return {{0, 0}, {0, 0}};
+  }
+
+  std::vector<Vec2i> bb = {{vertices[0].x, vertices[0].y}, {vertices[0].x, vertices[0].y}};
+  for (size_t i = 1; i < vertices.size(); i++) {
+    if (vertices[i].x < bb[0].x) {
+      bb[0].x = vertices[i].x;
+    } else if (vertices[i].x > bb[1].x) {
+      bb[1].x = vertices[i].x;
+    }
+
+    if (vertices[i].y < bb[0].y) {
+      bb[0].y = vertices[i].y;
+    } else if (vertices[i].y > bb[1].y) {
+      bb[1].y = vertices[i].y;
+    }
+  }
+
+  return bb;
+}
+
 // Use bounding box and then check whether point is in triangle.
-// void triangle_bb(Vec2i v0, Vec2i v1, Vec2i v2, TGAImage& image, const TGAColor& color) {
-// }
+void triangle_bb(std::vector<Vec2i> v, TGAImage& image, const TGAColor& color) {
+  std::vector<Vec2i> bb = find_bounding_box(v);
+  sort_vertices_y(v);
+
+  // For each point in bb, test to see if it's in triangle.
+  for (int x = bb[0].x; x <= bb[1].x; x++) {
+    for (int y = bb[0].y; y <= bb[1].y; y++) {
+      if (y >= v[1].y) {
+        // Top half bounded by v0->v1 and v0->v2.
+      } else {
+        // Bottom half bounded by v1->v2 and v0->v2.
+      }
+      std::cout << x << " " << y << std::endl;
+    }
+  }
+
+  // for (each pixel in the bounding box) {
+  //     if (inside(points, pixel)) {
+  //         put_pixel(pixel);
+  //     }
+  // }
+}
 
 void renderTriangles() {
   const int width = 200;
@@ -174,11 +204,13 @@ void renderTriangles() {
   std::vector<Vec2i> t2 = {Vec2i(180, 150), Vec2i(120, 160), Vec2i(130, 180)};
 
   triangle_unfilled(t0, image, white);
-  for(int i = 0; i < 1e4; i++) {
+  for (int i = 0; i < 1e4; i++) {
     triangle(t0, image, red);
     triangle(t1, image, white);
     triangle(t2, image, green);
   }
+
+  triangle_bb(t0, image, red);
 
   image.flip_vertically();  // i want to have the origin at the left bottom corner of the image
   image.write_tga_file("output3.tga");
