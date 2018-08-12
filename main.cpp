@@ -215,19 +215,30 @@ void triangleBarycentric(std::vector<Vec2i> v, TGAImage& image, const TGAColor& 
 
   // For each point in bb, test to see if it's in triangle.
   // In triangle means the value is on a particular side of the line. y < mx + b
+
+  float APx, APy, bary_u, bary_v; 
   for (int x = bb[0].x; x <= bb[1].x; x++) {
+    bool inside = false;
     for (int y = bb[0].y; y <= bb[1].y; y++) {
-      float APx = x - v[0].x;
-      float APy = y - v[0].y;
-      float u = mat_inverse[0][0] * APx + mat_inverse[0][1] * APy;
-      if (u < 0) {
-        continue;
+      APx = x - v[0].x;
+      APy = y - v[0].y;
+      bary_u = mat_inverse[0][0] * APx + mat_inverse[0][1] * APy;
+      if (bary_u < 0) {
+        if (inside) {
+          // Goes from inside to outside we are done with row.
+          break;
+        } else {
+          continue;
+        }
       }
 
-      float v = mat_inverse[1][0] * APx + mat_inverse[1][1] * APy;
+      bary_v = mat_inverse[1][0] * APx + mat_inverse[1][1] * APy;
 
-      if (v >= 0 && 1 >= u + v) {
+      if (bary_v >= 0 && 1 >= bary_u + bary_v) {
+        inside = true;
         image.set(x, y, color);
+      } else if (inside) {
+        break;
       }
     }
   }
@@ -244,15 +255,15 @@ void renderTriangles() {
 
   // triangleUnfilled(t0, image, white);
   for (int i = 0; i < 1e4; i++) {
-    triangleBasic(t0, image, red);
+    // triangleBasic(t0, image, red);
     // triangleBasic(t1, image, white);
     // triangleBasic(t2, image, green);
-    triangleBB(t0, image, red);
+    // triangleBB(t0, image, red);
     // triangleBB(t1, image, white);
     // triangleBB(t2, image, green);
     triangleBarycentric(t0, image, red);
-    // triangleBarycentric(t1, image, red);
-    // triangleBarycentric(t2, image, red);
+    triangleBarycentric(t1, image, white);
+    triangleBarycentric(t2, image, green);
   }
 
 
