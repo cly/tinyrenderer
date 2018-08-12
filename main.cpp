@@ -104,7 +104,7 @@ void renderModel() {
   image.write_tga_file("output2.tga");
 }
 
-void triangle_unfilled(std::vector<Vec2i> v, TGAImage& image, const TGAColor& color) {
+void triangleUnfilled(std::vector<Vec2i> v, TGAImage& image, const TGAColor& color) {
   line(v[0], v[1], image, color);
   line(v[1], v[2], image, color);
   line(v[2], v[0], image, color);
@@ -114,7 +114,7 @@ void sort_vertices_y(std::vector<Vec2i>& vertices) {
   std::sort(vertices.begin(), vertices.end(), [](Vec2i& a, Vec2i& b) { return a.y > b.y; });
 }
 
-void triangle(std::vector<Vec2i> v, TGAImage& image, const TGAColor& color) {
+void triangleBasic(std::vector<Vec2i> v, TGAImage& image, const TGAColor& color) {
   sort_vertices_y(v);
 
   // Rasterize simultaneously left and right of triangle.
@@ -172,7 +172,7 @@ std::vector<Vec2i> find_bounding_box(const std::vector<Vec2i>& vertices) {
 }
 
 // Use bounding box and then check whether point is in triangle.
-void triangle_bb(std::vector<Vec2i> v, TGAImage& image, const TGAColor& color) {
+void triangleBB(std::vector<Vec2i> v, TGAImage& image, const TGAColor& color) {
   std::vector<Vec2i> bb = find_bounding_box(v);
   sort_vertices_y(v);
 
@@ -194,12 +194,43 @@ void triangle_bb(std::vector<Vec2i> v, TGAImage& image, const TGAColor& color) {
       }
     }
   }
+}
 
-  // for (each pixel in the bounding box) {
-  //     if (inside(points, pixel)) {
-  //         put_pixel(pixel);
-  //     }
-  // }
+void triangleBarycentric(std::vector<Vec2i> v, TGAImage& image, const TGAColor& color) {
+  std::vector<Vec2i> bb = find_bounding_box(v);
+  sort_vertices_y(v);
+
+  float ABx = v[1].x - v[0].x;
+  float ABy = v[1].y - v[0].y;
+  float ACx = v[2].x - v[0].x;
+  float ACy = v[2].y - v[0].y;
+
+  std::vector<std::vector<float>> mat = {
+    {ABx, ACx},
+    {ABy, ACy}
+  };
+
+  float mat_det = 1.0f / (mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0]);
+  std::vector<std::vector<float>> mat_inverse = {{mat_det * mat[1][1], mat_det * -mat[0][1]}, {mat_det * -mat[1][0], mat_det * mat[0][0]}};
+
+  // For each point in bb, test to see if it's in triangle.
+  // In triangle means the value is on a particular side of the line. y < mx + b
+  for (int x = bb[0].x; x <= bb[1].x; x++) {
+    for (int y = bb[0].y; y <= bb[1].y; y++) {
+      float APx = x - v[0].x;
+      float APy = y - v[0].y;
+      float u = mat_inverse[0][0] * APx + mat_inverse[0][1] * APy;
+      if (u < 0) {
+        continue;
+      }
+
+      float v = mat_inverse[1][0] * APx + mat_inverse[1][1] * APy;
+
+      if (v >= 0 && 1 >= u + v) {
+        image.set(x, y, color);
+      }
+    }
+  }
 }
 
 void renderTriangles() {
@@ -211,14 +242,19 @@ void renderTriangles() {
   std::vector<Vec2i> t1 = {Vec2i(180, 50), Vec2i(150, 1), Vec2i(70, 180)};
   std::vector<Vec2i> t2 = {Vec2i(180, 150), Vec2i(120, 160), Vec2i(130, 180)};
 
-  // triangle_unfilled(t0, image, white);
+  // triangleUnfilled(t0, image, white);
   for (int i = 0; i < 1e4; i++) {
-    triangle(t0, image, red);
-    triangle(t1, image, white);
-    triangle(t2, image, green);
+    triangleBasic(t0, image, red);
+    // triangleBasic(t1, image, white);
+    // triangleBasic(t2, image, green);
+    triangleBB(t0, image, red);
+    // triangleBB(t1, image, white);
+    // triangleBB(t2, image, green);
+    triangleBarycentric(t0, image, red);
+    // triangleBarycentric(t1, image, red);
+    // triangleBarycentric(t2, image, red);
   }
 
-  triangle_bb(t0, image, red);
 
   image.flip_vertically();  // i want to have the origin at the left bottom corner of the image
   image.write_tga_file("output3.tga");
